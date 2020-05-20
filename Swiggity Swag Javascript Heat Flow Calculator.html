@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<!-- saved from url=(0039)http://darknova.bounceme.net/index.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <title>Swiggity Swag Javascript Heat Flow Calculator</title>
+  <style type="text/css">
+        body {
+            background: url(http://i.imgur.com/QJLJKYG.jpg) no-repeat;
+            background-size: cover;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        
+        a {
+            color: #fff;
+        }
+        
+        #footer {
+           position:fixed;
+           left:0px;
+           bottom:0px;
+           height:10px;
+           width:100%;
+           padding-left: 0.25em;
+           font-size: 0.3em;
+           cursor: pointer;
+        }
+        
+        #footer:hover {
+            height: 50px;
+            font-size: 50px;
+            padding-left: 0;
+        }
+        
+        #sCalc label {
+            font-size: 0.7em;
+            color: #FFF;
+            font-weight: bold;
+        }
+        
+        #sCalc input[type=submit] {
+            display: block;
+            margin-top: 2em;
+        }
+        
+        #sCalc .units {
+            font-weight: 400;
+            font-size: .9em;
+            display: inline;
+        }
+        
+        #sCalc td {
+            padding: 1em;
+        }
+        
+        form {
+            padding-bottom: 2em;
+        }
+  </style>
+  <script type="text/javascript">
+        function rndFloat(num, precision) {
+            if (!isNaN(precision)) { 
+              exp = Math.pow(10,precision);
+              return Math.round(num * exp) / exp;
+            }
+        }
+        
+        function fetch(tagName) {
+            return document.getElementsByName(tagName)[0].value;
+        }
+        
+        function setTxt(tagId, val) {
+            document.getElementById(tagId).text = val;
+        }
+        
+        function kJtokW(kJ) {
+            var uDuration = document.getElementsByName('uDuration')[0].value;
+            return rndFloat(kJ / uDuration, 2);
+        }
+        
+        function durationAdjust() {
+          el = document.getElementsByName('uDuration')[0];
+          var uDuration = el.value;
+
+          if (uDuration > 59) {
+            el.step = 60;
+            el.min = -7140;
+            el.max = 7200;
+            setTxt('uDuration', Math.floor(uDuration / 60) + " minutes");
+          } else {
+            el.step = 1;
+            el.min = 0;
+            el.max = 120;
+            setTxt('uDuration', uDuration + " seconds");
+          }
+          calcSpecificHeat();
+        }
+        
+        function calcSpecificHeat() {
+            var sHeat = fetch('specificHeat');
+            var qWater = fetch('qWater');
+            var uWater = fetch('uWater');
+            var uDuration = fetch('uDuration');
+            var tempIn = fetch('tempIn');
+            var tempOut = fetch('tempOut');
+            var pVolts = fetch('pVolts');
+            var HXEff = fetch('HXEff') / 100;
+            var kWhCost = fetch('kWhCost');
+            
+            var mWater = qWater * uWater;
+            var deltaT = tempOut - tempIn;
+            var heatAdded = sHeat * mWater * deltaT / 1000;
+            var heatKw = kJtokW(heatAdded);
+            var pWatts = (heatKw / HXEff);
+            var pAmps = pWatts / pVolts * 1000;
+            pAmps = rndFloat(pAmps,1);
+
+            //setTxt('uDuration', uDuration);
+            setTxt('tempInSliderVal', tempIn); 
+            setTxt('tempOutSliderVal', tempOut); 
+            setTxt('tempInF', Math.round((tempIn * 1.8) + 32)); 
+            setTxt('tempOutF', Math.round((tempOut * 1.8) + 32)); 
+            setTxt('HXSliderVal', Math.round(HXEff * 100)); 
+            setTxt('deltaT', deltaT);
+            setTxt('mWater', rndFloat(mWater / 1000,3));
+            setTxt('heatAdded', heatAdded.toExponential(3));
+            setTxt('heatAddedWatts', heatKw.toLocaleString());
+            setTxt('heatAddedBTU', Math.round(heatKw * 3412.142).toLocaleString());
+            setTxt('pWatts', rndFloat(pWatts,2).toLocaleString());
+            setTxt('pVolts', pVolts);
+            setTxt('pAmps', pAmps.toLocaleString());
+            setTxt('pOhms', rndFloat(pVolts / pAmps,3));
+            setTxt('cMin', rndFloat(heatKw / HXEff * kWhCost / 60,2).toFixed(2));
+            setTxt('cHr', rndFloat(heatKw / HXEff * kWhCost,2).toFixed(2));
+        }
+  </script>
+</head>
+<body>
+  <h3>Swiggity Swag Javascript Heat Flow Calculator</h3>
+  <form id="sCalc" name="sCalc" onsubmit="calcSpecificHeat(); return(false);">
+    <table>
+      <tbody>
+        <tr>
+          <td><label for="specificHeat">Specific Heat</label><br>
+          <input name="specificHeat" size="4" type="text" value="4.184">
+          <label class="units">J/g °C</label></td>
+          <td><label for="qWater">Water Used</label><br>
+          <input name="qWater" size="3" type="text" value="2.2"> <select class="units" name="uWater" oninput="calcSpecificHeat();">
+            <option value="3785.4">
+              Gal
+            </option>
+            <option value="1000">
+              L
+            </option>
+          </select></td>
+          <td><label for="uDuration">Duration <a id="uDuration">1
+          minute</a></label><br>
+          <input max="120" min="0" name="uDuration" oninput="durationAdjust();" step="1" style="width: 500px;" type="range" value="60"><br></td>
+        </tr>
+        <tr>
+          <td colspan="2"><label for="tempIn">Initial Temp. <a id="tempInSliderVal">7</a> °C (<a id="tempInF">45</a> °F)</label><br>
+          <input max="100" min="0" name="tempIn" oninput="calcSpecificHeat();" step="1" style="width: 200px;" type="range" value="7"><br></td>
+          <td><label for="tempOut">Desired Temp. <a id="tempOutSliderVal">49</a> °C (<a id="tempOutF">120</a>
+          °F)</label><br>
+          <input max="100" min="0" name="tempOut" oninput="calcSpecificHeat();" step="1" style="width: 200px;" type="range" value="49"><br></td>
+        </tr>
+      </tbody>
+    </table><strong>Using: <em>Q = cmΔT</em></strong><br>
+    <br>
+    <strong>ΔT:</strong> <a id="deltaT">42</a> °C<br>
+    <strong>Mass:</strong> <a id="mWater">8.328</a> kg<br>
+    <br>
+    <strong>Heat Added: <a id="heatAdded">1.463e+3</a> kJ<br>
+    <br>
+    Using <em>W = J/s:</em><br>
+    <br>
+    <a id="heatAddedWatts">24.39</a> kW, or <a id="heatAddedBTU">83,222</a>
+    BTU/h</strong><br>
+    <table>
+      <tbody>
+        <tr>
+          <td><label for="pVolts">Volts (nominal)</label><br>
+          <select name="pVolts" onchange="calcSpecificHeat();">
+            <option value="110">
+              120
+            </option>
+            <option selected="" value="240">
+              240
+            </option>
+            <option value="277">
+              277
+            </option>
+            <option value="480">
+              480
+            </option>
+          </select> <label class="units">VAC</label></td>
+          <td><label for="kWhCost">$/kWh</label><br>
+          <input name="kWhCost" size="4" type="text" value="0.169"></td>
+          <td><label for="HXEff">HX Efficiency: <a id="HXSliderVal">40</a>%</label><br>
+          <input max="100" min="0" name="HXEff" oninput="calcSpecificHeat();" step="1" style="width: 200px;" type="range" value="40"><br></td>
+        </tr>
+      </tbody>
+    </table><strong>Using: <em>P = IV</em></strong><br>
+    <br>
+    <strong>Power:</strong> <a id="pWatts">60.98</a> kW<br>
+    <strong>Volts:</strong> <a id="pVolts">240</a> V<br>
+    <strong>Amperes:</strong> <a id="pAmps">254.1</a> A<br>
+    <strong>Element Resistance:</strong> <a id="pOhms">0.945</a> Ω<br>
+    <strong>$/min:</strong> $<a id="cMin">0.17</a><br>
+    <strong>$/hr:</strong> $<a id="cHr">10.30</a><br>
+  </form>
+  <script type="text/javascript">
+        var nodes = document.getElementsByTagName('input');
+        
+        for (var i = 0; i < nodes.length; i++) { 
+            if (nodes[i].getAttribute("type") == "text") {
+                nodes[i].oninput = function(){calcSpecificHeat();};
+            }
+        }
+        calcSpecificHeat();
+  </script>
+  <div id="footer">
+    Woof.
+  </div>
+
+
+</body></html>
